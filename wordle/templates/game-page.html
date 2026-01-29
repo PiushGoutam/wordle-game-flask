@@ -139,25 +139,18 @@
                     {% endfor %}
                 </div>            
             {% endfor %}
-        <div>
+            </div>
 
-      <div id="keyboard">
-        <div class="key-row">
-            {% for key in keylist.first_row  %}
-                <button class="key">{{ key }}</button>
-            {% endfor %}
+        <div id="keyboard">
+        {% for key_row in keylist%}
+            <div class="key-row">
+                {% for key in key_row  %}
+                    <button class="key">{{ key }}</button>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
         </div>
-        <div class="key-row">
-            {% for key in keylist.second_row  %}
-                <button class="key">{{ key }}</button>
-            {% endfor %}
-        </div>
-        <div class="key-row">
-            {% for key in keylist.third_row  %}
-                <button class="key">{{ key }}</button>
-            {% endfor %}
-        </div>
-      </div>
     </div>
 
     <div id="message" class="message"></div>
