@@ -134,11 +134,9 @@
         <div id="board">
             {% for i in range(6) %}            
                 <div class="row">
-                    <div class="tile"></div>
-                    <div class="tile"></div>
-                    <div class="tile"></div>
-                    <div class="tile"></div>
-                    <div class="tile"></div>
+                    {% for j in range(5) %}
+                    <div class="tile" id="tile-{{i}}-{{j}}"></div>
+                    {% endfor %}
                 </div>            
             {% endfor %}
         <div>
@@ -146,17 +144,17 @@
       <div id="keyboard">
         <div class="key-row">
             {% for key in keylist.first_row  %}
-                <button>{{ key }}</button>
+                <button class="key">{{ key }}</button>
             {% endfor %}
         </div>
         <div class="key-row">
             {% for key in keylist.second_row  %}
-                <button>{{ key }}</button>
+                <button class="key">{{ key }}</button>
             {% endfor %}
         </div>
         <div class="key-row">
             {% for key in keylist.third_row  %}
-                <button>{{ key }}</button>
+                <button class="key">{{ key }}</button>
             {% endfor %}
         </div>
       </div>
@@ -208,6 +206,7 @@
       }
 
       function handleKeyInput(key) {
+        console.log(key)
         if (gameOver) return;
 
         if (key === "ENTER") {
