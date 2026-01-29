@@ -1,0 +1,2 @@
+FLASK_APP=wordle
+FLASK_DEBUG=1

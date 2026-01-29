@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wordle - powered with Flask</title>
+    <style>
+      :root {
+        --bg-color: #121213;
+        --text-color: #ffffff;
+        --border-color: #3a3a3c;
+        --correct: #538d4e;
+        --present: #b59f3b;
+        --absent: #3a3a3c;
+        --tile-font: 2rem;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      header {
+        border-bottom: 1px solid var(--border-color);
+        width: 100%;
+        text-align: center;
+        padding: 10px 0;
+      }
+
+      #game-container {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 20px;
+      }
+
+      /* The Grid */
+      #board {
+        display: grid;
+        grid-template-rows: repeat(6, 1fr);
+        gap: 5px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+      }
+
+      .tile {
+        width: 60px;
+        height: 60px;
+        border: 2px solid var(--border-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: var(--tile-font);
+        font-weight: bold;
+        text-transform: uppercase;
+        transition: transform 0.1s;
+      }
+
+      .tile[data-state="active"] {
+        border-color: #565758;
+      }
+      .tile[data-state="correct"] {
+        background-color: var(--correct);
+        border: none;
+      }
+      .tile[data-state="present"] {
+        background-color: var(--present);
+        border: none;
+      }
+      .tile[data-state="absent"] {
+        background-color: var(--absent);
+        border: none;
+      }
+
+      /* Keyboard */
+      #keyboard {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .key-row {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .key {
+        background-color: #818384;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 15px 12px;
+        cursor: pointer;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+
+      .key.large {
+        padding: 15px 20px;
+      }
+
+      .message {
+        position: fixed;
+        top: 10%;
+        background: white;
+        color: black;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>WORDLE</h1>
+    </header>
+
+    <div id="game-container">
+        <div id="board">
+            {% for i in range(6) %}            
+                <div class="row">
+                    <div class="tile"></div>
+                    <div class="tile"></div>
+                    <div class="tile"></div>
+                    <div class="tile"></div>
+                    <div class="tile"></div>
+                </div>            
+            {% endfor %}
+        <div>
+
+      <div id="keyboard">
+        <div class="key-row">
+            {% for key in keylist.first_row  %}
+                <button>{{ key }}</button>
+            {% endfor %}
+        </div>
+        <div class="key-row">
+            {% for key in keylist.second_row  %}
+                <button>{{ key }}</button>
+            {% endfor %}
+        </div>
+        <div class="key-row">
+            {% for key in keylist.third_row  %}
+                <button>{{ key }}</button>
+            {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <script>
+      const targetWord = "GHOST"; // Change this to any 5-letter word
+      const ROWS = 6;
+      const COLS = 5;
+      let currentRow = 0;
+      let currentCol = 0;
+      let gameOver = false;
+
+      const board = document.getElementById("board");
+      const keyboard = document.getElementById("keyboard");
+      const messageDisplay = document.getElementById("message");
+
+      // Initialize the grid
+      function initBoard() {
+        for (let i = 0; i < ROWS; i++) {
+          const row = document.createElement("div");
+          row.className = "row";
+          for (let j = 0; j < COLS; j++) {
+            const tile = document.createElement("div");
+            tile.className = "tile";
+            tile.id = `tile-${i}-${j}`;
+            row.appendChild(tile);
+          }
+          board.appendChild(row);
+        }
+      }
+
+
+      function initKeyboard() {
+        keys.forEach((row) => {
+          const rowDiv = document.createElement("div");
+          rowDiv.className = "key-row";
+          row.forEach((key) => {
+            const btn = document.createElement("button");
+            btn.textContent = key;
+            btn.className = "key" + (key.length > 1 ? " large" : "");
+            btn.onclick = () => handleKeyInput(key);
+            rowDiv.appendChild(btn);
+          });
+          keyboard.appendChild(rowDiv);
+        });
+      }
+
+      function handleKeyInput(key) {
+        if (gameOver) return;
+
+        if (key === "ENTER") {
+          submitGuess();
+        } else if (key === "DEL" || key === "BACKSPACE") {
+          deleteLetter();
+        } else if (/^[A-Z]$/.test(key.toUpperCase()) && currentCol < COLS) {
+          addLetter(key.toUpperCase());
+        }
+      }
+
+      function addLetter(letter) {
+        const tile = document.getElementById(
+          `tile-${currentRow}-${currentCol}`,
+        );
+        tile.textContent = letter;
+        tile.setAttribute("data-state", "active");
+        currentCol++;
+      }
+
+      function deleteLetter() {
+        if (currentCol > 0) {
+          currentCol--;
+          const tile = document.getElementById(
+            `tile-${currentRow}-${currentCol}`,
+          );
+          tile.textContent = "";
+          tile.removeAttribute("data-state");
+        }
+      }
+
+      function submitGuess() {
+        if (currentCol < COLS) {
+          showMessage("Not enough letters");
+          return;
+        }
+
+        const guess = Array.from(
+          { length: COLS },
+          (_, i) =>
+            document.getElementById(`tile-${currentRow}-${i}`).textContent,
+        ).join("");
+
+        checkGuess(guess);
+        currentRow++;
+        currentCol = 0;
+
+        if (guess === targetWord) {
+          showMessage("Splendid!");
+          gameOver = true;
+        } else if (currentRow === ROWS) {
+          showMessage("Game Over! The word was " + targetWord);
+          gameOver = true;
+        }
+      }
+
+      function checkGuess(guess) {
+        const rowTiles = Array.from(board.children[currentRow].children);
+        const targetArr = targetWord.split("");
+
+        // First pass: Mark correct (green)
+        guess.split("").forEach((letter, i) => {
+          if (letter === targetArr[i]) {
+            rowTiles[i].setAttribute("data-state", "correct");
+            targetArr[i] = null; // Remove to prevent double counting
+          }
+        });
+
+        // Second pass: Mark present or absent
+        guess.split("").forEach((letter, i) => {
+          if (rowTiles[i].getAttribute("data-state") === "correct") return;
+
+          const foundIndex = targetArr.indexOf(letter);
+          if (foundIndex > -1) {
+            rowTiles[i].setAttribute("data-state", "present");
+            targetArr[foundIndex] = null;
+          } else {
+            rowTiles[i].setAttribute("data-state", "absent");
+          }
+        });
+      }
+
+      function showMessage(msg) {
+        messageDisplay.textContent = msg;
+        messageDisplay.style.display = "block";
+        setTimeout(() => (messageDisplay.style.display = "none"), 2000);
+      }
+
+      // Physical keyboard support
+      window.addEventListener("keydown", (e) => {
+        const key = e.key.toUpperCase();
+        if (key === "ENTER" || key === "BACKSPACE" || /^[A-Z]$/.test(key)) {
+          handleKeyInput(key);
+        }
+      });
+
+      //initBoard();
+      //initKeyboard();
+    </script>
+  </body>
+</html>
