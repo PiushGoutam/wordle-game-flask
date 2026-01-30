@@ -87,6 +87,15 @@
                 submittedAnswer += tile.innerText
             }
             console.log("Submitted answer is ", submittedAnswer)
+            const url = {{ url_for('game.CheckWord')|tojson}}
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ "word" : submittedAnswer})
+            }).then(response => response.json())
+            .then(data => console.log(data))
         }
 
         function handleKeyInput(key) {
