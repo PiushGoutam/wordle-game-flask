@@ -17,7 +17,7 @@
     <div id="game-container">
         <div id="board">
             {% for i in range(6) %}            
-                <div class="row">
+                <div class="row row-{{i+1}}">
                     {% for j in range(5) %}
                     <div class="tile" id="tile-{{i}}-{{j}}"></div>
                     {% endfor %}
@@ -80,16 +80,25 @@
             
         }
 
+        function handleEnterPress() {
+            let submittedTiles = document.getElementsByClassName(`row-${currentAttempt}`)[0].getElementsByClassName('tile');
+            let submittedAnswer = '';
+            for (let tile of submittedTiles){
+                submittedAnswer += tile.innerText
+            }
+            console.log("Submitted answer is ", submittedAnswer)
+        }
+
         function handleKeyInput(key) {
             
             if( key == 'ENTER') {
                 console.log('Enter pressed')
+                handleEnterPress();
                 return;
             }
 
             if( key == 'DEL') {
-                handleDelPress();
-                
+                handleDelPress();                
                 return;
             }
 
